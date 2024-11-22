@@ -8,7 +8,7 @@ import Cocoa
 
 
 // 获取应用名称
-fileprivate let kAppName: String = {
+public let kAppName: String = {
     let bundle = Bundle.main
     return bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String
     ?? bundle.infoDictionary?["CFBundleDisplayName"] as? String
@@ -20,7 +20,7 @@ fileprivate let kAppName: String = {
 
 
 
-class LCPermissionManager: NSObject {
+public class LCPermissionManager: NSObject {
     
     /// 单例
     static let shared = LCPermissionManager()
@@ -61,7 +61,7 @@ class LCPermissionManager: NSObject {
     var allAuthPassedHandler: (() -> Void)?
     
     // MARK: - 定时监听权限
-    public func monitorPermissionAuthTypes(_ authTypes: [LCPermissionModel], repeat repeatSeconds: Int = 0) {
+    func monitorPermissionAuthTypes(_ authTypes: [LCPermissionModel], repeat repeatSeconds: Int = 0) {
         self.authTypes = authTypes
         monitorTimer?.invalidate()
         

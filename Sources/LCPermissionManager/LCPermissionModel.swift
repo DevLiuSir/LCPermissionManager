@@ -10,7 +10,7 @@ import Foundation
 
 
 /// 权限授权类型
-enum LCPermissionAuthType: Int {
+public enum LCPermissionAuthType: Int {
     case none                 // 无
     case accessibility        // 辅助功能权限
     case fullDisk             // 完全磁盘权限
