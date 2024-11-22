@@ -92,8 +92,9 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
+  spec.source_files = "Sources/LCPermissionManager/**/*.{h,m,swift}"
 
-  spec.source_files = "LCPermissionManager/**/*.{h,m,swift}"
+
 
 
 
