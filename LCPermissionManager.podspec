@@ -93,7 +93,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.source_files = "Sources/LCPermissionManager/**/*.{h,m,swift}"
-  spec.resource      =   'Sources/LCPermissionManager/Resources/*'
+  spec.resources    = 'Sources/LCPermissionManager/Resources/*'
 
 
 
