@@ -95,16 +95,9 @@ Pod::Spec.new do |spec|
   spec.source_files = "Sources/LCPermissionManager/**/*.{h,m,swift}"
   
   spec.resource = 'Sources/LCPermissionManager/Resources/**/*.strings'
-
-  # spec.resource_bundles = {
-  #   'LCPermissionManager' => ['Sources/LCPermissionManager/Resources/*.bundle']
-  # }
-
-
-
-spec.resource_bundles = {
-  'LCPermissionManager' => ['Sources/LCPermissionManager/Resources/**/*']
-}
+  spec.resource_bundles = {
+    'LCPermissionManager' => ['Sources/LCPermissionManager/Resources/*.bundle']
+  }
 
 
 
