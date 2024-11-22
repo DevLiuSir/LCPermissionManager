@@ -1,0 +1,26 @@
+/* 
+ LCPermissionManager.strings
+ 
+ 
+ Created by DevLiuSir on 2024/10/30.
+ 
+ */
+
+
+"Permission Title" = "授予%@权限";
+"Permission sub Title" = "%@需要您的许可才能使用，请查看并授权";
+"View permission setting tutorail" = "观看权限设置教学 >>";
+"Accessibility permission authorization" = "辅助功能权限授权";
+"Screen recording permission authorization" = "录屏权限授权";
+"Full disk access authorization" = "完全磁盘访问权限授权";
+"Authorize" = "授权";
+"Quit App" = "退出App";
+"Skip" = "跳过";
+
+"Kind tips" = "温馨提示";
+"Accessibility Tips" = "%@需要您授予“辅助功能”权限，请授权后使用。（如果显示您已授权，请删除后重新添加）";
+"ScreenCapture Tips" = "%@需要您授予“屏幕录制”权限，请授权后使用。（如果显示您已授权，请删除后重新添加）";
+"Full disk access Tips" = "%@需要您授予“完全磁盘访问”权限，请授权后使用。（如果显示您已授权，请删除后重新添加）";
+"To Authorize" = "去授权";
+"Cancel" = "取消";
+"Sure" = "确定";

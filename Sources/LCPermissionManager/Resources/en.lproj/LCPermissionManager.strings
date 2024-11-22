@@ -1,0 +1,26 @@
+/* 
+ LCPermissionManager.strings
+ 
+ 
+ Created by DevLiuSir on 2024/10/30.
+ 
+ */
+
+
+"Permission Title" = "Grant %@ permissions";
+"Permission sub Title" = "%@ requires your permission to use, please review and authorize";
+"View permission setting tutorail" = "View permission setting tutorail >>";
+"Accessibility permission authorization" = "Accessibility permission authorization";
+"Screen recording permission authorization" = "Screen recording permission authorization";
+"Full disk access authorization" = "Full disk access authorization";
+"Authorize" = "Authorize";
+"Quit App" = "Quit App";
+"Skip" = "Skip";
+
+"Kind tips" = "Kind tips";
+"Accessibility Tips" = "%@ requires you to grant the \"Accessibility\" permission, please use it after authorization. (If permissions are already granted, please remove and re-add them.)";
+"ScreenCapture Tips" = "%@ requires you to grant the \"ScreenCapture\" permission, please use it after authorization. (If permissions are already granted, please remove and re-add them.)";
+"Full disk access Tips" = "%@ requires you to grant the \"Full disk access\" permission, please use it after authorization. (If permissions are already granted, please remove and re-add them.)";
+"To Authorize" = "To Authorize";
+"Cancel" = "Cancel";
+"Sure" = "Sure";

@@ -1,0 +1,26 @@
+/* 
+ LCPermissionManager.strings
+ 
+ 
+ Created by DevLiuSir on 2024/10/30.
+ 
+ */
+
+
+"Permission Title" = "Autoriser l'accès à %@";
+"Permission sub Title" = "%@ a besoin de votre autorisation pour fonctionner. Veuillez consulter et autoriser";
+"View permission setting tutorail" = "Voir le tutoriel de réglage des autorisations >>";
+"Accessibility permission authorization" = "Autorisation d'accessibilité";
+"Screen recording permission authorization" = "Autorisation d'enregistrement d'écran";
+"Full disk access authorization" = "Autorisation d'accès complet au disque";
+"Authorize" = "Autoriser";
+"Quit App" = "Quitter l'application";
+"Skip" = "Passer";
+
+"Kind tips" = "Conseils bienveillants";
+"Accessibility Tips" = "%@ nécessite l'autorisation d'accessibilité, veuillez autoriser l'accès. (Si elles sont déjà accordées, veuillez les supprimer et les ajouter à nouveau.)";
+"ScreenCapture Tips" = "%@ nécessite l'autorisation d'enregistrement d'écran, veuillez autoriser l'accès. (Si elles sont déjà accordées, veuillez les supprimer et les ajouter à nouveau.)";
+"Full disk access Tips" = "%@ nécessite l'autorisation d'accès complet au disque, veuillez autoriser l'accès. (Si elles sont déjà accordées, veuillez les supprimer et les ajouter à nouveau.)";
+"To Authorize" = "Autoriser";
+"Cancel" = "Annuler";
+"Sure" = "D'accord";

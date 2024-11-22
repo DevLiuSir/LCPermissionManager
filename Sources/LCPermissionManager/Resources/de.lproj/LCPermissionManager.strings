@@ -1,0 +1,26 @@
+/* 
+ LCPermissionManager.strings
+ 
+ 
+ Created by DevLiuSir on 2024/10/30.
+ 
+ */
+
+
+"Permission Title" = "Berechtigung für %@ erteilen";
+"Permission sub Title" = "%@ benötigt Ihre Erlaubnis zur Verwendung. Bitte überprüfen und gewähren Sie die Berechtigung.";
+"View permission setting tutorail" = "Anleitung zur Berechtigungseinstellung ansehen >>";
+"Accessibility permission authorization" = "Barrierefreiheit-Berechtigung autorisieren";
+"Screen recording permission authorization" = "Bildschirmaufzeichnungs-Berechtigung autorisieren";
+"Full disk access authorization" = "Voller Festplattenzugriff autorisieren";
+"Authorize" = "Autorisieren";
+"Quit App" = "App beenden";
+"Skip" = "Überspringen";
+
+"Kind tips" = "Hinweis";
+"Accessibility Tips" = "%@ benötigt Ihre Erlaubnis zur Verwendung der „Barrierefreiheit“. Bitte gewähren Sie die Berechtigung, um fortzufahren. (Wenn der Zugriff bereits gewährt wurde, entfernen Sie die Berechtigung und fügen Sie sie erneut hinzu.)";
+"ScreenCapture Tips" = "%@ benötigt Ihre Erlaubnis zur Verwendung der „Bildschirmaufzeichnung“. Bitte gewähren Sie die Berechtigung, um fortzufahren. (Wenn der Zugriff bereits gewährt wurde, entfernen Sie die Berechtigung und fügen Sie sie erneut hinzu.)";
+"Full disk access Tips" = "%@ benötigt Ihre Erlaubnis zur Verwendung des „vollen Festplattenzugriffs“. Bitte gewähren Sie die Berechtigung, um fortzufahren. (Wenn der Zugriff bereits gewährt wurde, entfernen Sie die Berechtigung und fügen Sie sie erneut hinzu.)";
+"To Authorize" = "Zur Autorisierung";
+"Cancel" = "Abbrechen";
+"Sure" = "Bestätigen";

@@ -1,0 +1,26 @@
+/* 
+ LCPermissionManager.strings
+ 
+ 
+ Created by DevLiuSir on 2024/10/30.
+ 
+ */
+
+
+"Permission Title" = "%@への権限付与";
+"Permission sub Title" = "%@を使用するには許可が必要です。詳細を確認して承認してください";
+"View permission setting tutorail" = "権限設定チュートリアルを表示する >>";
+"Accessibility permission authorization" = "アクセシビリティの許可を付与する";
+"Screen recording permission authorization" = "画面録画の許可を付与する";
+"Full disk access authorization" = "完全ディスクアクセスの許可を付与する";
+"Authorize" = "承認する";
+"Quit App" = "アプリを終了する";
+"Skip" = "スキップする";
+
+"Kind tips" = "親切なヒント";
+"Accessibility Tips" = "%@は「アクセシビリティ」権限を必要とします。使用する前に権限を付与してください。（権限が既に付与されている場合は、一度削除して再追加してください。）";
+"ScreenCapture Tips" = "%@は「画面録画」権限を必要とします。使用する前に権限を付与してください。（権限が既に付与されている場合は、一度削除して再追加してください。）";
+"Full disk access Tips" = "%@は「完全ディスクアクセス」権限を必要とします。使用する前に権限を付与してください。（権限が既に付与されている場合は、一度削除して再追加してください。）";
+"To Authorize" = "承認する";
+"Cancel" = "キャンセル";
+"Sure" = "確認";
