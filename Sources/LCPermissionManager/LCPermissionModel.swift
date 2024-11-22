@@ -18,7 +18,7 @@ public enum LCPermissionAuthType: Int {
 }
 
 /// 权限模型
-class LCPermissionModel {
+public class LCPermissionModel {
     
     /// 授权类型
     var authType: LCPermissionAuthType
@@ -30,7 +30,7 @@ class LCPermissionModel {
     /// - Parameters:
     ///   - authType: 授权类型
     ///   - desc: 文字描述权限的作用
-    init(authType: LCPermissionAuthType, desc: String) {
+    public init(authType: LCPermissionAuthType, desc: String) {
         self.authType = authType
         self.desc = desc
     }

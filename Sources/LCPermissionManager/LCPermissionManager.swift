@@ -23,7 +23,7 @@ public let kAppName: String = {
 public class LCPermissionManager: NSObject {
     
     /// 单例
-    static let shared = LCPermissionManager()
+    public static let shared = LCPermissionManager()
     
     /// 权限窗口控制器
     /// - 用于显示权限设置窗口
@@ -48,7 +48,7 @@ public class LCPermissionManager: NSObject {
     
     /// 是否已跳过权限设置（只读属性）
     /// - 标记用户是否选择跳过权限设置
-    var skipped: Bool {
+    public var skipped: Bool {
         return _skipped
     }
     
@@ -61,7 +61,7 @@ public class LCPermissionManager: NSObject {
     var allAuthPassedHandler: (() -> Void)?
     
     // MARK: - 定时监听权限
-    func monitorPermissionAuthTypes(_ authTypes: [LCPermissionModel], repeat repeatSeconds: Int = 0) {
+    public func monitorPermissionAuthTypes(_ authTypes: [LCPermissionModel], repeat repeatSeconds: Int = 0) {
         self.authTypes = authTypes
         monitorTimer?.invalidate()
         
