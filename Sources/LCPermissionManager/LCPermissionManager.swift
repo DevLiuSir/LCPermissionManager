@@ -275,19 +275,35 @@ public class LCPermissionManager: NSObject {
     // MARK: 获取完全磁盘权限状态
     public static func getFullDiskAccessIsEnabled() -> Bool {
         if #available(macOS 10.14, *) {
+            let isSandbox = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+            let userHomePath: String
+            
+            if isSandbox {
+                guard let pw = getpwuid(getuid()), let homeDir = pw.pointee.pw_dir else {
+                    fatalError("Failed to retrieve home directory in sandbox mode.")
+                }
+                userHomePath = String(cString: homeDir)
+            } else {
+                userHomePath = NSHomeDirectory()
+            }
+            
             let testFiles = [
-                NSHomeDirectory() + "/Library/Safari/CloudTabs.db",
-                NSHomeDirectory() + "/Library/Safari/Bookmarks.plist",
-                "/Library/Application Support/com.apple.TCC/TCC.db"
+                "\(userHomePath)/Library/Safari/CloudTabs.db",
+                "\(userHomePath)/Library/Safari/Bookmarks.plist",
+                "/Library/Application Support/com.apple.TCC/TCC.db",
+                "/Library/Preferences/com.apple.TimeMachine.plist"
             ]
             
             for file in testFiles {
-                if open(file, O_RDONLY) != -1 {
+                let fd = open(file, O_RDONLY)
+                if fd != -1 {
+                    close(fd)
                     return true
                 }
             }
+            return false
         }
-        return false
+        return true
     }
     
     // MARK: 打开完全磁盘权限设置窗口
