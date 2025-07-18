@@ -222,33 +222,23 @@ public class LCPermissionManager: NSObject {
     
     
     // MARK: 获取录屏权限状态
-    public static func getScreenCaptureIsEnabled() -> Bool {
-        if #available(macOS 10.15, *) {
-            var isEnabled = false
-            let currentPid = NSRunningApplication.current.processIdentifier
-            guard let windowList = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as NSArray? else {
-                return false
+    public func getScreenCaptureIsEnabled() -> Bool {
+        guard #available(macOS 10.15, *) else { return true }
+        let currentPid = NSRunningApplication.current.processIdentifier
+        // 获取当前屏幕上的窗口信息
+        guard let windowList = CGWindowListCopyWindowInfo(.excludeDesktopElements, kCGNullWindowID) as? [[CFString: Any]] else { return false }
+        for dict in windowList {
+            if let name = dict[kCGWindowName] as? String,
+               !name.isEmpty,
+               let pid = dict[kCGWindowOwnerPID] as? pid_t,
+               pid != currentPid,
+               let runningApp = NSRunningApplication(processIdentifier: pid),
+               let execName = runningApp.executableURL?.lastPathComponent,
+               execName != "Dock" {
+                return true
             }
-            
-            for windowInfo in windowList {
-                guard let windowDict = windowInfo as? NSDictionary,
-                      let pid = windowDict[kCGWindowOwnerPID as String] as? Int32,
-                      let windowName = windowDict[kCGWindowName as String] as? String else {
-                    continue
-                }
-                
-                if pid != currentPid {
-                    if let windowRunningApp = NSRunningApplication(processIdentifier: pid),
-                       let windowExecutableName = windowRunningApp.executableURL?.lastPathComponent,
-                       windowExecutableName != "Dock", !windowName.isEmpty {
-                        isEnabled = true
-                        break
-                    }
-                }
-            }
-            return isEnabled
         }
-        return true
+        return false
     }
     
     
