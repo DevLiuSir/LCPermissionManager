@@ -222,7 +222,7 @@ public class LCPermissionManager: NSObject {
     
     
     // MARK: 获取录屏权限状态
-    public func getScreenCaptureIsEnabled() -> Bool {
+    public static func getScreenCaptureIsEnabled() -> Bool {
         guard #available(macOS 10.15, *) else { return true }
         let currentPid = NSRunningApplication.current.processIdentifier
         // 获取当前屏幕上的窗口信息
