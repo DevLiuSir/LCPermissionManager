@@ -7,23 +7,11 @@
 import Cocoa
 
 
-// 获取应用名称
-public let kAppName: String = {
-    let bundle = Bundle.main
-    return bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String
-    ?? bundle.infoDictionary?["CFBundleDisplayName"] as? String
-    ?? bundle.localizedInfoDictionary?["CFBundleName"] as? String
-    ?? bundle.infoDictionary?["CFBundleName"] as? String
-    ?? "Unknown App Name" // 默认值，如果无法获取应用名称
-}()
-
-
-
-
 public class LCPermissionManager: NSObject {
-    
     /// 单例
     public static let shared = LCPermissionManager()
+    
+    // MARK: - private
     
     /// 权限窗口控制器
     /// - 用于显示权限设置窗口
@@ -35,44 +23,72 @@ public class LCPermissionManager: NSObject {
     
     /// 权限状态监控定时器
     /// - 用于定时刷新和检测权限状态
-    private var monitorTimer: Timer?
+    private var monitorTimer: Timer? = nil
     
     /// 是否已跳过权限设置
     /// - 标记用户是否选择跳过权限设置
-    //    private var skipped = false
+    private var skipped: Bool = false
+    
+    private override init() {}
     
     
     
-    /// 是否已跳过权限设置（私有存储属性）
-    private var _skipped = false
-    
-    /// 是否已跳过权限设置（只读属性）
-    /// - 标记用户是否选择跳过权限设置
-    public var skipped: Bool {
-        return _skipped
+    /// 是否所有权限都已授权
+    public var allAuthPassed: Bool {
+        var flag = true
+        for model in authTypes {
+            switch model.authType {
+            case .accessibility:
+                flag = flag && LCPermissionManager.getPrivacyAccessibilityIsEnabled()
+            case .screenCapture:
+                flag = flag && LCPermissionManager.getScreenCaptureIsEnabled()
+            case .fullDisk:
+                flag = flag && LCPermissionManager.getFullDiskAccessIsEnabled()
+            default:
+                break
+            }
+            if flag == false { break }
+        }
+        return flag
     }
     
-    /// 权限设置教程链接
-    /// - 提供给用户查看权限设置教程的视频或网页链接
+    /// 是否点击了跳过授权
+    public var isSkipped: Bool {
+        return skipped
+    }
+    
+    /// 点击了跳过授权
+    public var skipHandler: (() -> Void)?
+    
+    /// 点击了退出
+    public var quitHandler: (() -> Void)?
+    
+    /// 所有权限都已授权后的回调
+    /// - 当所有权限都已开启时调用
+    public var allAuthPassedHandler: (() -> Void)?
+    
+    /// 教学视频链接，不设置则不显示 观看权限设置教学>> 的按钮
     public var tutorialLink: String = ""
     
-    /// 所有权限通过后的回调
-    /// - 当所有权限都已开启时调用
-    var allAuthPassedHandler: (() -> Void)?
+    // MARK: - 循环监听
+    
+    /// 一次性监听所有权限，如果有权限未授权，则会显示授权窗口，当所有权限都授权时，则自动隐藏
+    /// - Parameters:
+    ///   - authTypes: 需要授权的权限
+    ///   - repeatSeconds: * 3 为 定时监听的秒数（比如，传入5s，则15s内检测3次，3次都返回false，则弹出授权窗口），一旦某个权限有变化，就会更新显示；默认为0，表示不重复，授权完毕后，退出监测
+    private var second = 0 // 记录过了多少秒
+    private var retryCount = 0 // 如果获取到有权限未授权，重新获取，超过一定次数，则判断为未全部授权，防止系统问题引起的授权窗口弹出
+    
     
     // MARK: - 定时监听权限
     public func monitorPermissionAuthTypes(_ authTypes: [LCPermissionModel], repeat repeatSeconds: Int = 0) {
         self.authTypes = authTypes
         monitorTimer?.invalidate()
-        
-        var second = 0
-        
-        monitorTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        monitorTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { [weak self] timer in
             guard let self = self else { return }
-            
             if repeatSeconds <= 0 {
-                // 不需要循环监测
-                if self.allAuthPassed() {
+                // 不需要循环检测
+                if self.allAuthPassed {
                     self.monitorTimer?.invalidate()
                     self.monitorTimer = nil
                     if self.permissionWC != nil {
@@ -80,53 +96,138 @@ public class LCPermissionManager: NSObject {
                     }
                     return
                 }
-                
                 // 有权限未授权，弹出授权窗口
                 if self.permissionWC == nil {
-                    self.showPermissionWindow(authTypes)
+                    self.permissionWC = LCPermissionWindowController()
+                    self.permissionWC?.permissionVC.allAuthPassedHandler = {
+                        // 已全部授权
+                        self.monitorTimer?.invalidate()
+                        self.monitorTimer = nil
+                        self.passAuth()
+                    }
+                    self.permissionWC?.permissionVC.skipHandler = {
+                        // 跳过
+                        self.skipAuth()
+                    }
+                    self.permissionWC?.permissionVC.quitHandler = {
+                        // 退出
+                        self.quitHandler?()
+                    }
+                    self.permissionWC?.closeHandler = {
+                        // 点击了关闭按钮
+                        self.monitorTimer?.invalidate()
+                        self.monitorTimer = nil
+                        self.permissionWC = nil
+                    }
+                    self.permissionWC?.permissionVC.authTypes = authTypes
                 } else {
                     self.permissionWC?.permissionVC.refreshAllAuthState()
                 }
-                self.permissionWC?.window?.makeKeyAndOrderFront(nil)
+                self.permissionWC?.window?.orderFrontRegardless()
             } else {
-                
-                second += 1
-                
-                if second >= repeatSeconds {
-                    // 达到设置的间隔秒数
-                    if !self.allAuthPassed() {
-                        if self.permissionWC == nil {
-                            self.showPermissionWindow(authTypes)
+                self.second += 1
+                if self.second >= repeatSeconds {
+                    // 达到了设置的间隔秒数
+                    self.second = 0
+                    if self.allAuthPassed == false {
+                        self.retryCount += 1
+                        if self.retryCount < 3 {
+                            return
                         }
-                        self.permissionWC?.window?.makeKeyAndOrderFront(nil)
-                        second = 0
+                        self.retryCount = 0
+                        // 有权限未授权，弹出授权窗口
+                        if self.permissionWC == nil {
+                            self.permissionWC = LCPermissionWindowController()
+                            self.permissionWC?.permissionVC.allAuthPassedHandler = {
+                                // 已全部授权
+                                self.passAuth()
+                            }
+                            self.permissionWC?.permissionVC.skipHandler = {
+                                // 跳过
+                                self.skipAuth()
+                            }
+                            self.permissionWC?.permissionVC.quitHandler = {
+                                // 退出
+                                self.quitHandler?()
+                            }
+                            self.permissionWC?.permissionVC.authTypes = authTypes
+                        }
+                        self.permissionWC?.window?.orderFrontRegardless()
                     } else {
-                        // 所有权限都已授权
+                        // 都已授权
                         if self.permissionWC != nil {
                             self.passAuth()
                         }
                     }
                 } else if self.permissionWC != nil {
+                    // 如果授权窗口在，每秒刷新一次状态
                     self.permissionWC?.permissionVC.refreshAllAuthState()
                 }
             }
-        }
+        })
     }
     
-    // MARK: 显示权限窗口
-    private func showPermissionWindow(_ authTypes: [LCPermissionModel]) {
-        let permissionWC = LCPermissionWindowController()
-        permissionWC.permissionVC.allAuthPassedHandler = { [weak self] in
-            self?.passAuth()
+    
+    // MARK: - 一次性监听
+    
+    // MARK: 检查多个权限是否同时开启
+    public func checkPermissionAuth(_ authTypes: [LCPermissionAuthType]) -> Bool {
+        var flag = true
+        for type in authTypes {
+            switch type {
+            case .accessibility:
+                flag = flag && LCPermissionManager.getPrivacyAccessibilityIsEnabled()
+            case .screenCapture:
+                flag = flag && LCPermissionManager.getScreenCaptureIsEnabled()
+            case .fullDisk:
+                flag = flag && LCPermissionManager.getFullDiskAccessIsEnabled()
+            default:
+                break
+            }
+            if flag == false {
+                break
+            }
         }
-        permissionWC.permissionVC.skipHandler = { [weak self] in
-            self?.skipAuth()
-        }
-        permissionWC.permissionVC.authTypes = authTypes
-        self.permissionWC = permissionWC
+        return flag
     }
     
-    // MARK: - 权限都已通过
+    // MARK: 显示授权窗口
+    public func showPermissionAuth(_ authTypes: [LCPermissionModel]) {
+        monitorTimer?.invalidate()
+        monitorTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { [weak self] timer in
+            guard let self = self else { return }
+            if self.permissionWC == nil {
+                self.permissionWC = LCPermissionWindowController()
+                self.permissionWC?.permissionVC.allAuthPassedHandler = {
+                    // 已全部授权
+                    self.monitorTimer?.invalidate()
+                    self.monitorTimer = nil
+                    self.passAuth()
+                }
+                self.permissionWC?.permissionVC.skipHandler = {
+                    // 跳过
+                    self.skipAuth()
+                }
+                self.permissionWC?.permissionVC.quitHandler = {
+                    // 退出
+                    self.quitHandler?()
+                }
+                self.permissionWC?.closeHandler = {
+                    // 点击了关闭按钮
+                    self.monitorTimer?.invalidate()
+                    self.monitorTimer = nil
+                    self.permissionWC = nil
+                }
+                self.permissionWC?.permissionVC.authTypes = authTypes
+            } else {
+                self.permissionWC?.permissionVC.refreshAllAuthState()
+            }
+            self.permissionWC?.window?.orderFrontRegardless()
+        })
+    }
+    
+    
+    // MARK: 通过授权
     private func passAuth() {
         permissionWC?.close()
         permissionWC = nil
@@ -139,94 +240,64 @@ public class LCPermissionManager: NSObject {
         permissionWC = nil
         monitorTimer?.invalidate()
         monitorTimer = nil
-        _skipped = true
+        skipped = true
+        skipHandler?()
     }
     
-    // MARK: 检查某个权限是否开启
-    public static func checkPermissionAuthType(_ authType: LCPermissionAuthType) -> Bool {
-        var isAuthorized = true
-        var tips = ""
-        var selector: Selector? = nil
-        
-        switch authType {
+    // MARK: 检查某个权限是否开启，如果未开启，则弹出Alert，请求打开权限
+    @discardableResult
+    public static func checkPermission(authType type: LCPermissionAuthType) -> Bool {
+        var flag = true
+        var selector: Selector?
+        var tips: String = ""
+        switch type {
         case .accessibility:
-            isAuthorized = getPrivacyAccessibilityIsEnabled()
+            flag = getPrivacyAccessibilityIsEnabled()
             tips = "Accessibility Tips"
             selector = #selector(openPrivacyAccessibilitySetting)
         case .screenCapture:
-            isAuthorized = getScreenCaptureIsEnabled()
+            flag = getScreenCaptureIsEnabled()
             tips = "ScreenCapture Tips"
             selector = #selector(openScreenCaptureSetting)
         case .fullDisk:
-            isAuthorized = getFullDiskAccessIsEnabled()
+            flag = getFullDiskAccessIsEnabled()
             tips = "Full disk access Tips"
             selector = #selector(openFullDiskAccessSetting)
-        case .none:
+        default:
             break
         }
+        
         // 未授权，弹窗
-        if !isAuthorized {
+        if flag == false {
             let alert = NSAlert()
             alert.alertStyle = .warning
-            alert.messageText = localizeString("Kind tips")
-            alert.informativeText = String(format: localizeString(tips), kAppName)
-            alert.addButton(withTitle: localizeString("To Authorize"))
-            alert.addButton(withTitle: localizeString("Cancel"))
-            
-            if alert.runModal() == .alertFirstButtonReturn, let selector = selector {
-                perform(selector)
+            alert.messageText = LCPermissionManager.localizeString("Kind tips")
+            alert.informativeText = String(format: LCPermissionManager.localizeString(tips), LCPermissionManager.appName)
+            alert.addButton(withTitle: LCPermissionManager.localizeString("To Authorize"))
+            alert.addButton(withTitle: LCPermissionManager.localizeString("Cancel"))
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                if let sel = selector, responds(to: sel)  {
+                    perform(sel)
+                }
             }
         }
-        return isAuthorized
+        return flag
     }
     
-    // MARK: 获取所有权限是否已授权
-    public func allAuthPassed() -> Bool {
-        for model in authTypes {
-            switch model.authType {
-            case .accessibility:
-                if !LCPermissionManager.getPrivacyAccessibilityIsEnabled() { return false }
-            case .screenCapture:
-                if !LCPermissionManager.getScreenCaptureIsEnabled() { return false }
-            case .fullDisk:
-                if !LCPermissionManager.getFullDiskAccessIsEnabled() { return false }
-            case .none:
-                break
-            }
-        }
-        return true
-    }
+    
     
     // MARK: 获取辅助功能权限状态
     public static func getPrivacyAccessibilityIsEnabled() -> Bool {
-        AXIsProcessTrusted()
+        return AXIsProcessTrusted()
     }
     
-    
-    // MARK: 打开辅助功能权限设置窗口
-    @objc public func openPrivacyAccessibilitySetting() {
-        // 模拟鼠标抬起事件，请求辅助功能权限
-        if let eventRef = CGEvent(source: nil) {
-            let point = eventRef.location
-            if let mouseEventRef = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) {
-                mouseEventRef.post(tap: .cghidEventTap)
-            }
-        }
-        
-        // 构造辅助功能权限设置的 URL
-        let settingURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        if let settingURL = URL(string: settingURLString) {
-            NSWorkspace.shared.open(settingURL)
-        }
-    }
-    
-    
-    // MARK: 获取录屏权限状态
+    // MARK: 获取录屏权限是否打开
     public static func getScreenCaptureIsEnabled() -> Bool {
         guard #available(macOS 10.15, *) else { return true }
         let currentPid = NSRunningApplication.current.processIdentifier
         // 获取当前屏幕上的窗口信息
-        guard let windowList = CGWindowListCopyWindowInfo(.excludeDesktopElements, kCGNullWindowID) as? [[CFString: Any]] else { return false }
+        guard let windowList = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[CFString: Any]] else { return false }
         for dict in windowList {
             if let name = dict[kCGWindowName] as? String,
                !name.isEmpty,
@@ -241,28 +312,7 @@ public class LCPermissionManager: NSObject {
         return false
     }
     
-    
-    // MARK: 打开录屏权限设置窗口
-    @objc public func openScreenCaptureSetting() {
-        /// 检查系统版本是否支持
-        if #available(macOS 10.15, *) {
-            if #available(macOS 11.0, *) {
-                /// 请求屏幕录制权限
-                CGRequestScreenCaptureAccess()
-            } else {
-                /// macOS 10.15 没有 CGRequestScreenCaptureAccess，因此采取截屏以提示用户授予屏幕录制权限
-                let _ = CGWindowListCreateImage(CGRect(x: 0, y: 0, width: 1, height: 1), .optionOnScreenOnly, kCGNullWindowID, [])
-                /// 不需要释放截屏，Swift 会自动处理内存管理
-            }
-            DispatchQueue.main.async {
-                /// 异步在主队列中打开系统偏好设置以授予屏幕录制权限
-                let urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
-                NSWorkspace.shared.open(URL(string: urlString)!)
-            }
-        }
-    }
-    
-    // MARK: 获取完全磁盘权限状态
+    // MARK: 获取完全磁盘权限是否打开
     public static func getFullDiskAccessIsEnabled() -> Bool {
         if #available(macOS 10.14, *) {
             let isSandbox = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
@@ -296,18 +346,101 @@ public class LCPermissionManager: NSObject {
         return true
     }
     
+    // MARK: 打开辅助功能权限设置窗口
+    @objc public func openPrivacyAccessibilitySetting() {
+        // 构造辅助功能权限设置的 URL
+        let url = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        NSWorkspace.shared.open(URL(string: url)!)
+        
+        // 模拟键盘事件，将app带入到权限列表
+        guard let eventRef = CGEvent(source: nil) else { return }
+        let point = eventRef.location
+        guard let mouseEventRef = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) else { return }
+        mouseEventRef.post(tap: .cghidEventTap)
+    }
+    
+    // MARK: 打开录屏权限设置窗口
+    @objc public func openScreenCaptureSetting() {
+        /// 检查系统版本是否支持
+        if #available(macOS 10.15, *) {
+            if #available(macOS 11.0, *) {
+                /// 请求屏幕录制权限
+                CGRequestScreenCaptureAccess()
+            } else {
+                /// macOS 10.15 没有 CGRequestScreenCaptureAccess，因此采取截屏以提示用户授予屏幕录制权限
+                let _ = CGWindowListCreateImage(CGRect(x: 0, y: 0, width: 1, height: 1), .optionOnScreenOnly, kCGNullWindowID, [])
+                /// 不需要释放截屏，Swift 会自动处理内存管理
+            }
+            DispatchQueue.main.async {
+                /// 异步在主队列中打开系统偏好设置以授予屏幕录制权限
+                let urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+                NSWorkspace.shared.open(URL(string: urlString)!)
+            }
+        }
+    }
+    
+    
+    
     // MARK: 打开完全磁盘权限设置窗口
     @objc public func openFullDiskAccessSetting() {
-        let setting = "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-        NSWorkspace.shared.open(URL(string: setting)!)
+        let url = "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        NSWorkspace.shared.open(URL(string: url)!)
     }
     
     
-    // MARK: 本地化字符串
+    
+    // MARK: - 本地化相关
+    
+    /// 获取当前类所在的 Bundle（通常用于从资源包中加载本地化文件、图片等资源）
+    ///
+    /// 适用于将 `LCPermissionManager` 作为模块（如 Swift Package 或 CocoaPods）集成时，
+    /// 确保资源可以正确加载，而不是从主 Bundle 中查找。
+    static let bundle = Bundle(for: LCPermissionManager.self)
+    
+    
+    
+    /// 获取本地化字符串（从 LCPermissionManager.bundle 中的 LCPermissionManager.strings 文件）
+    ///
+    /// - Parameter key: 本地化键值（通常是英文原文）
+    /// - Returns: 对应的本地化字符串，如果未找到则返回空字符串
     static func localizeString(_ key: String) -> String {
-        let bundle = Bundle(for: self)
-        return bundle.localizedString(forKey: key, value: "", table: "LCPermissionManager")
+        return LCPermissionManager.bundle.localizedString(forKey: key, value: "", table: "LCPermissionManager")
     }
     
+    
+    
+    /// 应用名称
+    static let appName: String = Bundle.main.localizedInfoDictionary?["CFBundleDisplayName"] as? String ??
+    Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ??
+    Bundle.main.localizedInfoDictionary?["CFBundleName"] as? String ??
+    Bundle.main.infoDictionary?["CFBundleName"] as? String ?? ""
+    
+    
+    /// 获取 Bundle 中的图片
+    /// - Parameter icon: 图片名称
+    /// - Returns: 加载的图片
+    static func bundleImage(_ name: String) -> NSImage? {
+        // 尝试获取资源 Bundle 的 URL
+        guard let resourceBundleURL = Bundle.main.url(forResource: "LCPermissionManager", withExtension: "bundle") else {
+            print("❌ 找不到资源包 LCPermissionManager.bundle")
+            return nil
+        }
+        // 尝试通过 URL 创建资源 Bundle
+        guard let resourceBundle = Bundle(url: resourceBundleURL) else {
+            print("❌ 无法加载资源包: \(resourceBundleURL)")
+            return nil
+        }
+        // 尝试获取资源图片路径
+        guard let imagePath = resourceBundle.path(forResource: name, ofType: nil) else {
+            print("❌ 资源包中找不到图片: \(name)")
+            return nil
+        }
+        // 尝试加载图片
+        guard let image = NSImage(contentsOfFile: imagePath) else {
+            print("❌ 图片加载失败: \(imagePath)")
+            return nil
+        }
+        return image
+    }
     
 }

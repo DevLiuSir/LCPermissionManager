@@ -15,6 +15,9 @@ class LCPermissionWindowController: NSWindowController {
         let vc = LCPermissionViewController()
         return vc
     }()
+    
+    /// 点击关闭按钮回调
+    var closeHandler: (() -> ())?
 
     // 初始化方法
     override init(window: NSWindow?) {
@@ -29,7 +32,7 @@ class LCPermissionWindowController: NSWindowController {
         
         // 设置窗口外观
         self.window?.titlebarAppearsTransparent = true // 隐藏标题栏背景
-        self.window?.title = String(format: LCPermissionManager.localizeString("Permission Title"), kAppName) // 设置窗口标题
+        self.window?.title = String(format: LCPermissionManager.localizeString("Permission Title"), LCPermissionManager.appName) // 设置窗口标题
         self.window?.standardWindowButton(.zoomButton)?.isHidden = true // 隐藏缩放按钮
         self.window?.isOpaque = false   // 允许透明背景
         self.window?.isMovableByWindowBackground = true // 允许拖动窗口背景移动
@@ -40,5 +43,14 @@ class LCPermissionWindowController: NSWindowController {
     // 必须实现的初始化器
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+}
+
+
+//MARK: - NSWindowDelegate
+extension LCPermissionWindowController: NSWindowDelegate {
+    
+    func windowWillClose(_ notification: Notification) {
+        closeHandler?()
     }
 }

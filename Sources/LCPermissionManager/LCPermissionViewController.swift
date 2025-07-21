@@ -7,26 +7,12 @@
 
 import Cocoa
 
-
-
-/// 单个权限项的高度
-/// - 用于计算权限视图的布局和窗口高度
-private let kPermissionItemHeight: CGFloat = 50
-
-/// 权限项之间的间距
-/// - 确保各权限项之间有足够的视觉间隔，提升界面可读性
-private let kPermissionItemGap: CGFloat = 25
-
-
-
 // MARK: - 翻转视图
 class LCPermissionView: NSView {
     override var isFlipped: Bool {
         return true
     }
 }
-
-
 
 // MARK: - 自定义 Box
 class LCPermissionBoxView: NSBox {
@@ -81,7 +67,7 @@ class LCPermissionViewController: NSViewController {
     
     /// 标题文本
     private lazy var titleLabel: NSTextField = {
-        let label = NSTextField(labelWithString: String(format: LCPermissionManager.localizeString("Permission sub Title"), kAppName))
+        let label = NSTextField(labelWithString: String(format: LCPermissionManager.localizeString("Permission sub Title"), LCPermissionManager.appName))
         label.font = NSFont.systemFont(ofSize: 15)
         return label
     }()
@@ -90,6 +76,17 @@ class LCPermissionViewController: NSViewController {
     private lazy var box: LCPermissionBoxView = {
         return LCPermissionBoxView()
     }()
+    
+    /// 在仿达中显示按钮
+    private lazy var showInFinderBtn: NSButton = {
+        let icon = LCPermissionManager.bundleImage("search_finder@2x.png") ?? NSImage()
+        let btn = NSButton(image: icon, target: self, action: #selector(showInFinder))
+        btn.isBordered = false
+        btn.image?.isTemplate = true
+        btn.toolTip = LCPermissionManager.localizeString("Show in Finder")
+        return btn
+    }()
+    
     
     /// 查看权限设置教程按钮
     private lazy var lookBtn: NSButton = {
@@ -131,12 +128,24 @@ class LCPermissionViewController: NSViewController {
         }
     }
     
+    /// 单个权限项的高度
+    /// - 用于计算权限视图的布局和窗口高度
+    private let kPermissionItemHeight: CGFloat = 50
+
+    /// 权限项之间的间距
+    /// - 确保各权限项之间有足够的视觉间隔，提升界面可读性
+    private let kPermissionItemGap: CGFloat = 25
+    
     
     /// 所有权限通过后的，处理回调
     var allAuthPassedHandler: (() -> Void)?
     
     /// 跳过权限检查后的处理，回调
     var skipHandler: (() -> Void)?
+    
+    
+    /// 点击了退出，回调
+    var quitHandler: (() -> Void)?
     
     
     /**
@@ -155,13 +164,14 @@ class LCPermissionViewController: NSViewController {
      * - 不应在此方法中调用 `super.loadView()`。
      */
     override func loadView() {
-        self.view = LCPermissionView(frame: NSRect(x: 0, y: 0, width: 600, height: 300))
-        self.view.addSubview(effectView)
-        self.view.addSubview(titleLabel)
-        self.view.addSubview(box)
-        self.view.addSubview(lookBtn)
-        self.view.addSubview(quitBtn)
-        self.view.addSubview(skipBtn)
+        view = LCPermissionView(frame: NSRect(x: 0, y: 0, width: 600, height: 300))
+        view.addSubview(effectView)
+        view.addSubview(titleLabel)
+        view.addSubview(showInFinderBtn)
+        view.addSubview(box)
+        view.addSubview(lookBtn)
+        view.addSubview(quitBtn)
+        view.addSubview(skipBtn)
     }
     
     /**
@@ -181,6 +191,9 @@ class LCPermissionViewController: NSViewController {
         
         // 设置模糊背景效果视图的大小与父视图一致
         effectView.frame = view.bounds
+        
+        // 设置打开仿达按钮
+        showInFinderBtn.frame = NSRect(x: view.frame.size.width - 26, y: 8, width: 18, height: 18)
         
         // 标题标签布局
         titleLabel.sizeToFit()
@@ -228,8 +241,15 @@ class LCPermissionViewController: NSViewController {
     }
     
     //MARK: - Actions
+    
+    /// 在"访达"中显示
+    @objc func showInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: Bundle.main.bundlePath)])
+    }
+    
     /// 退出应用
     @objc private func quitApp() {
+        quitHandler?()
         NSApp.terminate(nil)
     }
     

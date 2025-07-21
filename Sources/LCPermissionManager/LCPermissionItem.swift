@@ -48,15 +48,15 @@ class LCPermissionItem: NSView {
             switch model.authType {
             case .accessibility:
                 // 辅助功能
-                self.iconView.image = bundleImage("Accessbility@2x.png")
+                self.iconView.image = LCPermissionManager.bundleImage("Accessbility@2x.png")
                 self.checkButton.title = LCPermissionManager.localizeString("Accessibility permission authorization")
             case .screenCapture:
                 // 录屏
-                self.iconView.image = bundleImage("ScreenRecording@2x.png")
+                self.iconView.image = LCPermissionManager.bundleImage("ScreenRecording@2x.png")
                 self.checkButton.title = LCPermissionManager.localizeString("Screen recording permission authorization")
             case .fullDisk:
                 // 完全磁盘
-                self.iconView.image = bundleImage("Folder@2x.png")
+                self.iconView.image = LCPermissionManager.bundleImage("Folder@2x.png")
                 self.checkButton.title = LCPermissionManager.localizeString("Full disk access authorization")
             default:
                 break
@@ -152,38 +152,6 @@ class LCPermissionItem: NSView {
     @objc private func checkButtonClicked() {
         checkButton.state = checkButton.state == .on ? .off : .on
         authButtonClicked()
-    }
-    
-    /// 获取 Bundle 中的图片
-    /// - Parameter icon: 图片名称
-    /// - Returns: 加载的图片
-    private func bundleImage(_ icon: String) -> NSImage? {
-        // 加载主 bundle
-        let bundle = Bundle(for: Self.self)
-
-        // 尝试获取资源 bundle 的 URL
-        guard let bundleURL = bundle.url(forResource: "LCPermissionManager", withExtension: "bundle"),
-              let resourceBundle = Bundle(url: bundleURL) else {
-            print("无法加载 LCPermissionManager.bundle")
-            return nil
-        }
-
-        // 深入查找嵌套的 LCPermissionManager.bundle
-        guard let nestedBundleURL = resourceBundle.url(forResource: "LCPermissionManager", withExtension: "bundle"),
-              let nestedBundle = Bundle(url: nestedBundleURL) else {
-            print("无法加载嵌套的 LCPermissionManager.bundle")
-            return nil
-        }
-
-        // 拼接图片路径
-        guard let imagePath = nestedBundle.path(forResource: icon, ofType: nil) else {
-            print("无法找到图片 \(icon) 在 LCPermissionManager.bundle 中")
-            print("嵌套 Bundle 路径: \(nestedBundle.bundlePath)")
-            return nil
-        }
-
-        // 加载图片
-        return NSImage(contentsOfFile: imagePath)
     }
     
 }
