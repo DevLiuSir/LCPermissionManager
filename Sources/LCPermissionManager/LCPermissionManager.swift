@@ -416,31 +416,39 @@ public class LCPermissionManager: NSObject {
     Bundle.main.infoDictionary?["CFBundleName"] as? String ?? ""
     
     
-    /// 获取 Bundle 中的图片
-    /// - Parameter icon: 图片名称
-    /// - Returns: 加载的图片
+    
+    
+    /// 从 LCPermissionManager 的资源 bundle 中加载图片
+    /// - Parameter name: 图片文件名（包括扩展名）
+    /// - Returns: 加载成功返回 NSImage，否则返回 nil
     static func bundleImage(_ name: String) -> NSImage? {
-        // 尝试获取资源 Bundle 的 URL
-        guard let resourceBundleURL = Bundle.main.url(forResource: "LCPermissionManager", withExtension: "bundle") else {
-            print("❌ 找不到资源包 LCPermissionManager.bundle")
+        // 加载主 bundle
+        let bundle = LCPermissionManager.bundle
+
+        // 尝试获取资源 bundle 的 URL
+        guard let bundleURL = bundle.url(forResource: "LCPermissionManager", withExtension: "bundle"),
+              let resourceBundle = Bundle(url: bundleURL) else {
+            print("无法加载 LCPermissionManager.bundle")
             return nil
         }
-        // 尝试通过 URL 创建资源 Bundle
-        guard let resourceBundle = Bundle(url: resourceBundleURL) else {
-            print("❌ 无法加载资源包: \(resourceBundleURL)")
+        
+        // 由于没有使用 cocoapods 导入，需要注释以下代码，才能正常显示图标
+        // 深入查找嵌套的 LCPermissionManager.bundle
+        guard let nestedBundleURL = resourceBundle.url(forResource: "LCPermissionManager", withExtension: "bundle"),
+              let nestedBundle = Bundle(url: nestedBundleURL) else {
+            print("无法加载嵌套的 LCPermissionManager.bundle")
             return nil
         }
-        // 尝试获取资源图片路径
-        guard let imagePath = resourceBundle.path(forResource: name, ofType: nil) else {
-            print("❌ 资源包中找不到图片: \(name)")
+
+        // 拼接图片路径
+        guard let imagePath = nestedBundle.path(forResource: name, ofType: nil) else {
+            print("无法找到图片 \(name) 在 LCPermissionManager.bundle 中")
+            print("嵌套 Bundle 路径: \(resourceBundle.bundlePath)")
             return nil
         }
-        // 尝试加载图片
-        guard let image = NSImage(contentsOfFile: imagePath) else {
-            print("❌ 图片加载失败: \(imagePath)")
-            return nil
-        }
-        return image
+
+        // 加载图片
+        return NSImage(contentsOfFile: imagePath)
     }
     
 }
